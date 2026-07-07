@@ -1,361 +1,237 @@
 # Yashvi AI Prompt Assistant
 
-A GitHub-ready Streamlit web app based on the uploaded Colab notebook `070726_Yashvi_AI_Assistant_Tool_App.ipynb`.
+A GitHub-ready Streamlit prototype based on the attached Colab notebook `070726_Yashvi_AI_Assistant_Tool_App.ipynb`.
 
-The app demonstrates an AI-based assistant tool that learns from approved user writing examples and predicts useful next phrases for emails, notes, reports, and online searches. It is designed as a portfolio project for Yashvi and can be deployed from GitHub to Streamlit Community Cloud.
+This app demonstrates an AI-based prompt assistant that learns from previous user writing examples and suggests likely next phrases for email, notes, reports, and online search prompts.
 
----
+## Important fix in this version
 
-## Live app goal
-
-After uploading this repository to GitHub, deploy it with:
-
-```bash
-streamlit run app.py
-```
-
-For Streamlit Community Cloud, choose:
-
-- Repository: your GitHub repository
-- Branch: `main`
-- Main file path: `app.py`
-
-No API keys are required.
-
----
-
-## What this project includes
+The previous Streamlit deployment failed with this error:
 
 ```text
-yashvi_ai_prompt_assistant_streamlit_github/
-├── app.py                                      # Main Streamlit app entrypoint
-├── requirements.txt                           # Python dependencies for Streamlit Cloud
-├── README.md                                  # Detailed project instructions
-├── LICENSE                                    # Portfolio copyright notice template
-├── .gitignore                                 # Files to exclude from GitHub
-├── .streamlit/
-│   └── config.toml                            # Streamlit theme/settings
-├── data/
-│   └── sample_user_history.csv                # Demo writing history
-├── src/
-│   ├── __init__.py
-│   └── assistant_engine.py                    # Core ML + feedback ranking logic
-├── notebooks/
-│   └── 070726_Yashvi_AI_Assistant_Tool_App.ipynb
-├── docs/
-│   ├── PROJECT_OVERVIEW.md
-│   ├── STREAMLIT_DEPLOYMENT_GUIDE.md
-│   ├── GITHUB_UPLOAD_GUIDE.md
-│   ├── PRIVACY_AND_SAFETY.md
-│   └── IOS_ROADMAP.md
-└── tests/
-    └── test_engine.py                         # Basic smoke test for the core engine
+ModuleNotFoundError: No module named 'src'
 ```
 
----
+That happened because `app.py` imported:
 
-## Product concept
+```python
+from src.assistant_engine import BanditRanker, SuggestionEngine, clean_history_df
+```
 
-The **Yashvi AI Prompt Assistant** is a prototype of an assistant tool that can support users while they type emails, notes, reports, and search queries.
+If the `src/` folder is not uploaded to GitHub, or Streamlit does not see the folder in the deployed repository, the app crashes before it opens.
 
-The goal is to save time and reduce interruption by suggesting likely next phrases based on prior writing patterns. The prototype uses lightweight machine learning methods so it can run quickly on a free Streamlit deployment.
+This fixed version removes that dependency from the running app. The root `app.py` is now self-contained, so Streamlit can run it directly from GitHub without needing to import `src`.
 
-### Main user flow
-
-1. User chooses a writing context such as `email`, `search`, `note`, `report`, or `general`.
-2. User starts typing a sentence or paragraph.
-3. The app generates suggested next phrases.
-4. User can accept or reject suggestions.
-5. The feedback ranker adjusts which suggestion sources are shown first.
-6. User can download a session profile JSON or CSV.
-
----
-
-## AI / ML techniques demonstrated
-
-### 1. Machine learning: n-gram prediction
-
-The app includes a simple n-gram model that learns word and phrase transitions from the writing history.
-
-Example:
+## Repository structure
 
 ```text
-Input: Dear team, thank you
-Possible continuation: for the updates
+.
+|-- app.py                              # Main Streamlit app; use this as the Streamlit entry point
+|-- requirements.txt                    # Python packages needed by Streamlit
+|-- runtime.txt                         # Python runtime hint for hosted deployment
+|-- README.md                           # Main documentation
+|-- data/
+|   `-- sample_user_history.csv          # Demo writing history data
+|-- notebooks/
+|   `-- 070726_Yashvi_AI_Assistant_Tool_App.ipynb
+|-- docs/
+|   |-- GITHUB_UPLOAD_GUIDE.md
+|   |-- STREAMLIT_DEPLOYMENT_GUIDE.md
+|   |-- PROJECT_OVERVIEW.md
+|   `-- PRIVACY_AND_SAFETY.md
+|-- .streamlit/
+|   `-- config.toml
+|-- src/
+|   |-- __init__.py
+|   `-- assistant_engine.py              # Optional placeholder for future modular refactor
+|-- tests/
+|   `-- test_static_checks.py
+|-- .gitignore
+`-- LICENSE
 ```
 
-This is a transparent baseline model. It is easy to explain in a student portfolio because it learns from previous text without requiring a paid model API.
+## What the app does
 
-### 2. Personalization: TF-IDF similarity search
+The prototype includes four AI/ML-style components:
 
-The app uses TF-IDF vectorization and cosine similarity to find previous writing examples that are similar to the current prompt. This gives the assistant a simple personalization signal.
+1. **N-gram next-phrase prediction**
+   - Learns which words often follow recent words in the user's previous writing.
+   - Produces a lightweight next phrase or sentence continuation.
 
-### 3. Reinforcement-learning-style feedback
+2. **Local TF-IDF personalization**
+   - Finds prior writing examples that are similar to the current prompt.
+   - Suggests a continuation based on the user's own writing style.
+   - Implemented directly in `app.py` to avoid heavy package dependencies.
 
-The app includes a lightweight multi-armed bandit-style ranker. Each suggestion source is treated like an arm:
+3. **Context-aware suggestions**
+   - Uses different fallback suggestions for email, search, note, report, and general writing.
 
-- `ml_ngram`
-- `similarity`
-- `template`
+4. **Reinforcement-learning-style feedback ranking**
+   - Lets the user accept or reject suggestions.
+   - Accepted suggestion sources rank higher in the current session.
+   - This is a small bandit-style feedback loop suitable for a portfolio prototype.
 
-When the user accepts a suggestion, that source receives a reward. When the user rejects a suggestion, it receives more exposure without a reward. Over time, accepted sources rank higher.
+## Quick local run
 
-### 4. Deep learning roadmap
-
-The original notebook includes an optional TensorFlow/Keras section for a tiny sequence model. The Streamlit app does **not** include TensorFlow by default because it would make the web deployment heavier. See `docs/PROJECT_OVERVIEW.md` and the notebook for the deep-learning extension idea.
-
----
-
-## Local setup
-
-### 1. Install Python
-
-Recommended: Python 3.10, 3.11, or 3.12.
-
-### 2. Create a virtual environment
-
-macOS / Linux:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-Windows PowerShell:
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-```
-
-### 3. Install dependencies
+From the project folder:
 
 ```bash
 pip install -r requirements.txt
-```
-
-### 4. Run the app
-
-```bash
 streamlit run app.py
 ```
 
-Then open the local URL printed by Streamlit, usually:
+Then open the local Streamlit URL shown in the terminal.
 
-```text
-http://localhost:8501
-```
+## How to upload to GitHub
 
----
+1. Download and unzip this project.
+2. Create a new GitHub repository, for example:
+   - `ai-prompt-assistant`
+   - `yashvi-ai-prompt-assistant`
+3. Upload the extracted files and folders to the repository.
+4. Confirm that the repository root contains these files:
+   - `app.py`
+   - `requirements.txt`
+   - `README.md`
+   - `data/sample_user_history.csv`
+5. Commit the files.
 
-## Deploy on Streamlit Community Cloud
+Do not upload only the ZIP file to GitHub. GitHub and Streamlit need the extracted project files.
 
-1. Create a new GitHub repository.
-2. Upload all files from this project folder to the repository root.
-3. Commit the files to the `main` branch.
-4. Go to Streamlit Community Cloud.
-5. Select **Create app**.
-6. Choose your GitHub repo.
-7. Set the main file path to:
+## How to deploy on Streamlit Community Cloud
+
+1. Go to Streamlit Community Cloud.
+2. Create a new app.
+3. Select your GitHub repository.
+4. Set the main file path to:
 
 ```text
 app.py
 ```
 
-8. Click **Deploy**.
+5. Deploy the app.
 
-The app should build from `requirements.txt` and launch as a public Streamlit app.
+The main file path should be exactly `app.py` if the file is in the root of the repository.
 
----
+## CSV upload format
 
-## CSV data format
-
-The app works with the included sample file:
-
-```text
-data/sample_user_history.csv
-```
-
-You can upload your own writing history CSV from the app sidebar.
+The app can run with its built-in sample data. You can also upload a CSV with your own writing examples.
 
 Required column:
-
-| Column | Required | Meaning |
-|---|---:|---|
-| `user_input` | Yes | A sentence, paragraph, email snippet, note, or search query |
-
-Optional column:
-
-| Column | Required | Meaning |
-|---|---:|---|
-| `context` | No | Writing type such as `email`, `search`, `note`, `report`, or `general` |
-
-Example:
-
-```csv
-context,user_input
-email,"Dear team, thank you for the updates. I reviewed the draft and added comments."
-search,"best way to deploy a Streamlit app from GitHub"
-note,"The assistant should learn from approved writing examples."
-```
-
----
-
-## How to customize the app
-
-### Change default examples
-
-Edit:
-
-```text
-data/sample_user_history.csv
-```
-
-or edit the built-in examples in:
-
-```text
-src/assistant_engine.py
-```
-
-### Change templates
-
-Open:
-
-```text
-src/assistant_engine.py
-```
-
-Then update the `TEMPLATES` dictionary.
-
-### Change the app title or UI copy
-
-Open:
-
-```text
-app.py
-```
-
-Then update:
-
-```python
-APP_NAME = "Yashvi AI Prompt Assistant"
-```
-
-### Add a larger model later
-
-Possible upgrades:
-
-- Keras GRU/LSTM next-token model
-- Transformer-based local model
-- User-specific model fine-tuning
-- Browser extension
-- iOS keyboard extension
-- Secure account-based storage
-- Encrypted on-device profile
-
----
-
-## Privacy-first design
-
-This prototype is intentionally privacy-conscious:
-
-- No external API calls
-- No paid model keys
-- No database storage
-- No background tracking
-- No automatic collection from email, keyboard, browser, or search history
-- User can upload a CSV manually
-- User can download their session profile
-
-For a real production assistant, add:
-
-- Clear opt-in consent
-- Data deletion controls
-- Local encryption
-- Sensitive-data filters
-- Security review
-- Model evaluation
-- Bias and safety testing
-- App Store / platform privacy disclosures
-
----
-
-## Important limitations
-
-This is a working portfolio prototype, not a production keyboard assistant.
-
-It does **not**:
-
-- Read the user's real email inbox
-- Read browser searches automatically
-- Act as a native iOS keyboard
-- Train a large neural network in the Streamlit app
-- Store user data permanently
-- Register copyright automatically
-
-A production iOS assistant would require native Swift/SwiftUI development, keyboard-extension architecture, Apple privacy disclosures, security review, and App Store submission.
-
----
-
-## Suggested GitHub repository description
-
-```text
-A Streamlit AI writing assistant prototype that learns from approved writing examples and suggests next phrases using n-gram ML, TF-IDF personalization, and reinforcement-learning-style feedback ranking.
-```
-
-Suggested topics:
-
-```text
-streamlit, machine-learning, ai-assistant, nlp, portfolio-project, python, scikit-learn, personalization
-```
-
----
-
-## Portfolio summary for Yashvi
-
-This project demonstrates how an AI assistant can support writing productivity by learning from user-approved examples and generating next-phrase suggestions. The app combines transparent machine learning, similarity-based personalization, and feedback optimization in a Streamlit interface that can be deployed publicly from GitHub.
-
----
-
-## Troubleshooting
-
-### Streamlit Cloud says it cannot find dependencies
-
-Make sure `requirements.txt` is in the repository root and includes:
-
-```text
-streamlit
-pandas
-numpy
-scikit-learn
-```
-
-### The app cannot find `src.assistant_engine`
-
-Make sure the `src/` folder is uploaded to the same repository root as `app.py`.
-
-### The app has no suggestions
-
-Use a longer prompt or upload a CSV with more writing examples.
-
-### Uploaded CSV fails
-
-Check that the CSV has a column named exactly:
 
 ```text
 user_input
 ```
 
-The optional context column should be named:
+Optional column:
 
 ```text
 context
 ```
 
----
+Allowed or suggested context values:
 
-## Copyright note
+```text
+email, search, note, report, general
+```
 
-This repository includes a portfolio copyright notice template in `LICENSE`. Replace `Yashvi` with the full legal name if desired.
+Example:
 
-This project file does not register copyright by itself. For formal registration, follow the official process in your jurisdiction.
+```csv
+context,user_input
+email,"Dear team, thank you for the update. I will review the document and send comments by Friday."
+search,"best way to deploy a Streamlit app from a GitHub repository"
+note,"The assistant should learn from user-approved examples and keep the user in control."
+```
+
+## How to use the app
+
+1. Choose a writing context in the dropdown.
+2. Type a phrase, sentence, or paragraph.
+3. Click **Generate suggestions**.
+4. Review the suggested continuations.
+5. Click **Accept** or **Reject** to update the session feedback ranker.
+6. Optionally download the session profile JSON or session CSV.
+
+## Troubleshooting
+
+### Error: `ModuleNotFoundError: No module named 'src'`
+
+This fixed version should not produce that error because `app.py` no longer imports from `src`.
+
+If you still see the error, GitHub or Streamlit is probably running the old `app.py`. Fix it by doing the following:
+
+1. Replace the old GitHub files with the files from this ZIP.
+2. Confirm that the deployed `app.py` does not contain this line:
+
+```python
+from src.assistant_engine import ...
+```
+
+3. In Streamlit Cloud, reboot or redeploy the app.
+
+### Error: Streamlit cannot find `app.py`
+
+Make sure the Streamlit app entry point is:
+
+```text
+app.py
+```
+
+Also make sure `app.py` is at the root of the GitHub repository, not hidden inside another folder.
+
+### Error reading CSV
+
+Make sure your CSV contains a column named exactly:
+
+```text
+user_input
+```
+
+The optional context column should be named exactly:
+
+```text
+context
+```
+
+## Privacy and safety notes
+
+This prototype is designed as a privacy-first demo:
+
+- No external AI API is called.
+- No API key is needed.
+- No database is used.
+- Session text stays in the active Streamlit session unless the user downloads it.
+- The sample data is fictional demo data.
+
+For a production typing assistant, browser extension, or iOS keyboard, additional privacy, consent, security, and data-retention controls would be required.
+
+## Portfolio explanation
+
+This project is useful for a student portfolio because it shows:
+
+- Product thinking
+- Data preprocessing
+- Lightweight machine learning
+- Personalization
+- Feedback-based ranking
+- Streamlit web app development
+- GitHub project organization
+- Documentation and deployment readiness
+
+## Future improvements
+
+Possible next steps:
+
+- Add user login and encrypted storage.
+- Add a browser extension prototype.
+- Add an iOS keyboard extension proof of concept.
+- Add transformer-based next-text generation with a small open-source model.
+- Add an evaluation dashboard for accepted/rejected suggestions.
+- Add stronger privacy controls and user data deletion tools.
+
+## License and copyright note
+
+This repository includes an MIT-style license file for portfolio demonstration. The copyright notice can be changed to Yashvi's full legal name if desired.
+
+Copyright (c) 2026 Yashvi

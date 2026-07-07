@@ -1,0 +1,2 @@
+Unzip this archive, then upload the extracted files and folders to GitHub.
+Do not upload only the ZIP file. Streamlit should use app.py as the main file path.
